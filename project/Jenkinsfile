@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('SCM checkout') {
+            steps {
+                git 'https://github.com/SIDDHUGITTY/upgrad_project.git'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh '''cd project/mysite
+                python3 manage.py test'''
+            }
+        }
+        stage('Build') {
+            steps {
+                sh '''cd project/mysite
+                docker-compose build
+                docker images
+                docker run -d -p 8000:8000 mysite_web:latest
+                docker container ps'''
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                kubeconfig(caCertificate: '', credentialsId: 'certificates', serverUrl: 'https://192.168.49.2:8443') {
+                sh '''cd project
+                kubectl apply  -f deployment.yaml
+                '''
+                }
+            }
+        }
+    }
+}    
